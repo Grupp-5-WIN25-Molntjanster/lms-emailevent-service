@@ -3,4 +3,7 @@
     <Project Path="src/EmailEvent.Api/EmailEvent.Api.csproj" />
     <Project Path="src/EmailEvent.Core/EmailEvent.Core.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EmailEvent.SenderTest/EmailEvent.SenderTest.csproj" />
+  </Folder>
 </Solution>
