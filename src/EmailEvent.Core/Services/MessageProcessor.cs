@@ -25,7 +25,8 @@ public class MessageProcessor(IEmailSender emailSender, ILogger<MessageProcessor
             return;
         }
 
+        logger.LogInformation("Sending email to {Email}...", verificationMessage.Email);
         await emailSender.SendVerificationCodeAsync(verificationMessage.Email, verificationMessage.Code, ct);
-        logger.LogInformation("Sent verification email to: {Email}", verificationMessage.Email);
+        logger.LogInformation("SendAsync returned for {Email}", verificationMessage.Email);
     }
 }

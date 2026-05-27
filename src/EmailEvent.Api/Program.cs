@@ -14,12 +14,10 @@ var senderAddress = builder.Configuration["Azure:CommunicationServices:SenderAdd
     ?? throw new InvalidOperationException("Azure:CommunicationServices:SenderAddress is not configured");
 
 
-builder.Services.AddSingleton(new EmailClient(acsConnectionString));
-
 builder.Services.AddSingleton<IEmailSender>(sp =>
 {
-    var client = sp.GetRequiredService<EmailClient>();
-    return new EmailSender(client, senderAddress);
+    var logger = sp.GetRequiredService<ILogger<EmailSender>>();
+    return new EmailSender(acsConnectionString, senderAddress, logger);
 });
 
 
@@ -38,7 +36,7 @@ builder.Services.AddScoped<MessageProcessor>();
 
 // Background worker
 builder.Services.AddHostedService<EmailWorker>();
-builder.Services.AddApplicationInsightsTelemetry();
+//builder.Services.AddApplicationInsightsTelemetry();
 
 
 var app = builder.Build();
