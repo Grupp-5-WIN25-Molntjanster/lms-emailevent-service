@@ -3,6 +3,7 @@ using Azure.Messaging.ServiceBus;
 using EmailEvent.Api.Workers;
 using EmailEvent.Core.Interfaces;
 using EmailEvent.Core.Services;
+using static System.Net.Mime.MediaTypeNames;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,4 +73,62 @@ app.MapGet("/diag", async (IConfiguration config) =>
     }
     return Results.Ok(results);
 });
+
+app.MapGet("/diag/worker", async (IConfiguration config) =>
+{
+    var results = new List<object>();
+    try
+    {
+        var sbConn = config["Azure:ServiceBus:ConnectionString"]!;
+        var queue = config["Azure:ServiceBus:QueueName"]!;
+        await using var client = new ServiceBusClient(sbConn);
+        var receiver = client.CreateReceiver(queue, new ServiceBusReceiverOptions
+        {
+            ReceiveMode = ServiceBusReceiveMode.PeekLock
+        });
+        var message = await receiver.ReceiveMessageAsync(TimeSpan.FromSeconds(5));
+        if (message is not null)
+        {
+            results.Add(new
+            {
+                service = "ServiceBusReceiver",
+                status = "OK",
+                received = true,
+                messageId = message.MessageId
+            });
+            await receiver.AbandonMessageAsync(message);
+        }
+        else
+        {
+            results.Add(new
+            {
+                service = "ServiceBusReceiver",
+                status = "OK",
+                received = false,
+                note = "No message within 5s"
+            });
+        }
+    }
+    catch (Exception ex)
+    {
+        results.Add(new { service = "ServiceBusReceiver", status = "FAIL", error = ex.Message });
+    }
+    return Results.Ok(results);
+});
+// sendtest — test ACS sending directly (hardcoded email):
+app.MapGet("/sendtest", async (IEmailSender emailSender) =>
+{
+    var results = new List<object>();
+    try
+    {
+        await emailSender.SendVerificationCodeAsync("wkwwd78046@minitts.net", "DIAG-123456", CancellationToken.None);
+        results.Add(new { service = "EmailSender", status = "OK", sentTo = "wkwwd78046@minitts.net" });
+    }
+    catch (Exception ex)
+    {
+        results.Add(new { service = "EmailSender", status = "FAIL", error = ex.Message });
+    }
+    return Results.Ok(results);
+});
+
 app.Run();
